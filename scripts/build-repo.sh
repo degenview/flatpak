@@ -44,8 +44,8 @@ for bundle in "${bundles[@]}"; do
 done
 
 # A final release is built once, on `stable`. An installed app follows its own branch and never
-# switches, and the Release Candidate channel accepts finals, so when the newest release of all is a
-# final it has to be on `beta` too. `build-commit-from` makes a new commit for the other branch from
+# switches, and the Release Candidate channel accepts finals, so when the release `beta` serves (the
+# newest final or `-rc.N`) is a final, it has to be on `beta` too. `build-commit-from` makes a new commit for the other branch from
 # the same files (it rewrites the ref binding that Flatpak checks on install) and signs it.
 while read -r tag; do
   for arch in x86_64 aarch64; do

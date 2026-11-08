@@ -36,7 +36,8 @@ updater, so it is built on `dev` and never published here. Bundles from before t
 compared by version, not upload time:
 
 - `stable` is the newest final release.
-- `beta` is the newest release of any kind. A Flatpak follows its own branch and never switches, and
+- `beta` is the newest release the Release Candidate channel of the app offers: a final or an
+  `-rc.N`, never an `-alpha.N` or `-beta.N`. A Flatpak follows its own branch and never switches, and
   the app's Release Candidate channel accepts finals, so when a final is the newest release it is
   copied onto `beta` as well (`flatpak build-commit-from`, signed). Someone on `beta` then moves from
   release candidates to the final and on to the next candidate.

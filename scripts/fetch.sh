@@ -51,9 +51,9 @@ jq --arg since "$SINCE_PUBLISHED_AT" '
     | {tag, prerelease}
   ] as $all
   | ($all | sort_by(.tag | version_key) | reverse) as $newest_first
-  # `stable` is the newest final. `beta` is the newest release of any kind: a Flatpak follows its own
-  # branch and never switches, and the Release Candidate channel of the app accepts finals, so a
-  # final has to reach `beta` too.
+  # `stable` is the newest final. `beta` is the newest release the Release Candidate channel offers,
+  # a final or an `-rc.N` (the only tags that get this far). A Flatpak follows its own branch and
+  # never switches, and that channel accepts finals, so a final has to reach `beta` too.
   | ($newest_first | map(select(.prerelease | not)) | first) as $stable
   | ($newest_first | first) as $beta
   | if $beta == null then []

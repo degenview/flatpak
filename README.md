@@ -23,7 +23,7 @@ releases; nothing in `degenview/degenview` holds a token for this repo.
 | Job | Secrets | What it does |
 | --- | --- | --- |
 | `fetch` | none | `scripts/fetch.sh` picks the releases for `stable` and `beta` (below) from those made by the app's release workflow after `SINCE_PUBLISHED_AT` (`config.env`), downloads both CPUs' bundles and verifies them (`gh release verify`, `verify-asset`, `gh attestation verify`). Stops when the live `state.json` already lists the same releases. |
-| `sign` | `FLATPAK_GPG_KEY` (environment `publish`, `main` only) | `scripts/build-repo.sh` imports the bundles into an OSTree repo, signs it, and writes the `.flatpakrepo`, the `.flatpakref` files, the landing page and `state.json`. `scripts/smoke-test.sh` then installs the app from that repo over `file://`. |
+| `sign` | `FLATPAK_GPG_KEY` (environment `publish`, `main` only) | `scripts/build-repo.sh` imports the bundles into an OSTree repo, signs it, and writes the `.flatpakrepo`, the `.flatpakref` files, the landing page (`web/index.html`, filled in by `scripts/render-site.sh`) and `state.json`. `scripts/smoke-test.sh` then installs the app from that repo over `file://`. |
 | `deploy` | none | Publishes the result with GitHub Pages. |
 
 The repo is rebuilt from scratch on every change. A bundle holds one commit and no history, so only
@@ -41,6 +41,17 @@ compared by version, not upload time:
   the app's Release Candidate channel accepts finals, so when a final is the newest release it is
   copied onto `beta` as well (`flatpak build-commit-from`, signed). Someone on `beta` then moves from
   release candidates to the final and on to the next candidate.
+
+## The landing page
+
+`web/` is the page as plain static files (HTML with inline CSS, the two fonts, the icons), styled after
+[degenview.app](https://degenview.app). `scripts/render-site.sh` copies it into the site and fills the
+versions of `stable` and `beta` and the signing key's fingerprint. To look at a change:
+
+```bash
+tools/preview-site.sh            # a stable and a beta release, http://localhost:8099
+tools/preview-site.sh beta-only  # only a release candidate, as before the first final
+```
 
 ## One-time setup (maintainer)
 

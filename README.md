@@ -29,8 +29,10 @@ releases; nothing in `degenview/degenview` holds a token for this repo.
 The repo is rebuilt from scratch on every change. A bundle holds one commit and no history, so only
 one release per branch is served; older ones stay on the releases page.
 
-`degenview/degenview`'s `release.yml` builds a final release on `stable` and a tag with a hyphen (a
-release candidate) on `beta`. Bundles from before that (branch `master`) are skipped. Releases are
+`degenview/degenview`'s `release.yml` builds a final release on `stable` and an `-rc.N` tag (a
+release candidate) on `beta`. An `-alpha.N` or `-beta.N` tag is offered to no channel by the app's
+updater, so it is built on `dev` and never published here. Bundles from before that (branch
+`master`) are skipped. Releases are
 compared by version, not upload time:
 
 - `stable` is the newest final release.

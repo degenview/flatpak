@@ -29,19 +29,20 @@ gh api "repos/${SOURCE_REPO}/releases?per_page=50" > "$OUT/releases.json"
 
 jq --arg since "$SINCE_PUBLISHED_AT" '
   # Order by version, never by upload time: a patch release for an old line must not outrank a
-  # candidate of a newer line. A final is newer than its own candidates; alpha < beta < rc.
+  # candidate of a newer line. A final is newer than its own candidates.
   def version_key:
-    capture("^v(?<a>[0-9]+)\\.(?<b>[0-9]+)\\.(?<c>[0-9]+)(-(?<pre>alpha|beta|rc)\\.(?<n>[0-9]+))?$")
+    capture("^v(?<a>[0-9]+)\\.(?<b>[0-9]+)\\.(?<c>[0-9]+)(-rc\\.(?<n>[0-9]+))?$")
     | [(.a | tonumber), (.b | tonumber), (.c | tonumber),
-       (if .pre then 0 else 1 end),
-       ({"alpha": 0, "beta": 1, "rc": 2}[.pre // "alpha"]),
+       (if .n then 0 else 1 end),
        ((.n // "0") | tonumber)];
 
   [ .[]
     | select(.draft | not)
     | select(.author.login == "github-actions[bot]")
     | select(.published_at >= $since)
-    | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$"))
+    # Only finals and `-rc.N`: the updater of the app offers an alpha or beta tag to no channel, so
+    # neither does this repo (release.yml builds those on the `dev` branch).
+    | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$"))
     | {tag: .tag_name, prerelease: .prerelease, assets: [.assets[].name]}
     | select(
         . as $r

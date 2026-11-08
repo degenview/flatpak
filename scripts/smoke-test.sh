@@ -28,6 +28,23 @@ for branch in stable beta; do
     found=true
   fi
 done
+
+# When a final release feeds both branches, both must be there and name the same version.
+if [ -f "$SITE/state.json" ] && jq -e 'any(.[]; (.branches | index("stable")) and (.branches | index("beta")))' "$SITE/state.json" > /dev/null; then
+  versions=()
+  for branch in stable beta; do
+    if ! info="$(flatpak --user remote-info smoke "${APP_ID}//${branch}" 2>&1)"; then
+      echo "::error::${APP_ID}//${branch} is missing, but a final release should feed both branches."
+      exit 1
+    fi
+    versions+=("$(printf '%s\n' "$info" | sed -n 's/^ *Version: *//p' | head -n 1)")
+  done
+  if [ -n "${versions[0]}" ] && [ -n "${versions[1]}" ] && [ "${versions[0]}" != "${versions[1]}" ]; then
+    echo "::error::stable is ${versions[0]} but beta is ${versions[1]}; beta should follow the final release."
+    exit 1
+  fi
+  echo "stable and beta both at '${versions[0]:-unknown}'."
+fi
 if [ "${found:-false}" != true ]; then
   echo "::error::Neither ${APP_ID}//stable nor //beta can be installed from the repo."
   exit 1

@@ -44,4 +44,4 @@ jobs:
 
       # shellcheck is on the runner image.
       - name: ShellCheck
-        run: shellcheck -x scripts/*.sh tools/*.sh
+        run: shellcheck -x -P SCRIPTDIR scripts/*.sh tools/*.sh

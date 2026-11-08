@@ -2,7 +2,9 @@ name: Publish
 
 # Builds the signed Flatpak repo from the app's releases and deploys it to GitHub Pages
 # (https://flatpak.degenview.app). It pulls: nothing in degenview/degenview holds a token for this
-# repo. Runs every six hours, and by hand (`force` publishes even when nothing changed).
+# repo. Runs every six hours, on a push to `main` that changes what gets published (the page, the
+# scripts, the config: such a push always publishes, even when no release changed), and by hand
+# (`force` publishes even when nothing changed).
 #
 # Three jobs, so that the code which downloads and checks files never sees the signing key:
 #   fetch  no secrets  chooses the releases, downloads and verifies the bundles
@@ -11,6 +13,13 @@ name: Publish
 on:
   schedule:
     - cron: "23 */6 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "scripts/**"
+      - "config.env"
+      - ".github/workflows/publish.yml"
   workflow_dispatch:
     inputs:
       force:
@@ -46,7 +55,8 @@ jobs:
         run: scripts/fetch.sh
         env:
           GH_TOKEN: ${{ github.token }}
-          FORCE: ${{ inputs.force }}
+          # A push changed the page or the scripts, so the site must be rebuilt even if the releases did not change.
+          FORCE: ${{ inputs.force || github.event_name == 'push' }}
           OUT: out
 
       - if: steps.fetch.outputs.changed == 'true'

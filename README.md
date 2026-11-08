@@ -17,7 +17,7 @@ Release candidates are on the `beta` branch (`es.nico.degenview//beta`). Update 
 
 ## How it is built
 
-`.github/workflows/publish.yml` runs every six hours and by hand. It pulls from the app's GitHub
+`.github/workflows/publish.yml` runs every six hours, by hand, and on a push to `main` that touches `web/`, `scripts/`, `config.env` or the workflow itself (that run always publishes). It pulls from the app's GitHub
 releases; nothing in `degenview/degenview` holds a token for this repo.
 
 | Job | Secrets | What it does |

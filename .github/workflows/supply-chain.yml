@@ -1,0 +1,47 @@
+name: Supply chain
+
+# Static analysis of the workflows (unpinned actions, injectable expressions, over-broad
+# permissions: zizmor), the same check degenview/degenview runs. Findings fail the job. Also weekly,
+# since a new rule can flag a file nobody touched.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supply-chain-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workflows:
+    name: Workflow audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          advanced-security: false
+          persona: regular
+
+  scripts:
+    name: Shell scripts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      # shellcheck is on the runner image.
+      - name: ShellCheck
+        run: shellcheck scripts/*.sh tools/*.sh

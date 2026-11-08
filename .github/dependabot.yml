@@ -1,0 +1,12 @@
+# Dependabot opens the pull requests; nothing here merges them. Every `uses:` is pinned to a commit,
+# and a pin that never moves misses fixes, so this proposes the new commit (and its version comment).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Wait a week before proposing a brand-new release: a hijacked or malicious version is usually
+    # yanked or flagged within days.
+    cooldown:
+      default-days: 7

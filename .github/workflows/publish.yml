@@ -1,0 +1,115 @@
+name: Publish
+
+# Builds the signed Flatpak repo from the app's releases and deploys it to GitHub Pages
+# (https://flatpak.degenview.app). It pulls: nothing in degenview/degenview holds a token for this
+# repo. Runs every six hours, and by hand (`force` publishes even when nothing changed).
+#
+# Three jobs, so that the code which downloads and checks files never sees the signing key:
+#   fetch  no secrets  chooses the releases, downloads and verifies the bundles
+#   sign   `publish`   the only job with FLATPAK_GPG_KEY; builds and signs the OSTree repo
+#   deploy             publishes the result to Pages
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Publish even when the site already lists these releases"
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+env:
+  SOURCE_REPO: degenview/degenview
+  SITE_URL: https://flatpak.degenview.app
+
+jobs:
+  fetch:
+    name: Choose and verify releases
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.fetch.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - id: fetch
+        run: scripts/fetch.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+          OUT: out
+
+      - if: steps.fetch.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: releases
+          path: out
+          retention-days: 1
+          if-no-files-found: error
+
+  sign:
+    name: Build and sign the repo
+    needs: fetch
+    if: needs.fetch.outputs.changed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # Holds FLATPAK_GPG_KEY and deploys from `main` only (set in the repository's environment).
+    environment: publish
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: releases
+          path: in
+
+      - name: Install flatpak, ostree and gnupg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y flatpak ostree gnupg
+
+      - name: Build and sign the repo
+        run: scripts/build-repo.sh
+        env:
+          FLATPAK_GPG_KEY: ${{ secrets.FLATPAK_GPG_KEY }}
+          IN: in
+          SITE: site
+
+      # No secrets here: the key is gone from the runner when the step above ends.
+      - name: Install the app from the repo that was just built
+        run: scripts/smoke-test.sh
+        env:
+          SITE: site
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to Pages
+    needs: sign
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

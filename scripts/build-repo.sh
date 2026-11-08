@@ -123,40 +123,10 @@ done
 cp "$IN/state.json" "$SITE/state.json"
 printf '%s\n' "$host" > "$SITE/CNAME"
 
-cat > "$SITE/index.html" <<EOF
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DegenView Flatpak repository</title>
-<style>
-  :root { color-scheme: light dark; --fg: #1d1d1f; --muted: #6e6e73; --bg: #ffffff; --code: #f2f2f4; }
-  @media (prefers-color-scheme: dark) { :root { --fg: #f5f5f7; --muted: #a1a1a6; --bg: #161617; --code: #232326; } }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
-  main { max-width: 42rem; margin: 0 auto; padding: 2rem 1rem; }
-  h1 { font-size: 1.5rem; margin-top: 0; }
-  pre { background: var(--code); padding: 0.75rem 1rem; border-radius: 8px; overflow-x: auto; }
-  a { color: var(--muted); text-decoration: underline; }
-  p, li { color: var(--fg); } small, .muted { color: var(--muted); }
-</style>
-</head>
-<body>
-<main>
-<h1>DegenView Flatpak repository</h1>
-<p>Add the repository once, then install and update DegenView like any other Flatpak app. The
-runtime comes from Flathub, so <a href="https://flathub.org/setup">set Flathub up</a> first.</p>
-<pre>flatpak remote-add --if-not-exists degenview ${SITE_URL}/degenview.flatpakrepo
-flatpak install degenview ${APP_ID}//stable</pre>
-<p>Release candidates are on the <code>beta</code> branch: <code>flatpak install degenview ${APP_ID}//beta</code>.
-Update with <code>flatpak update</code>.</p>
-<p class="muted">Signing key fingerprint:<br><code>${fingerprint}</code></p>
-<p class="muted">Source: <a href="https://github.com/degenview/degenview">degenview/degenview</a> ·
-<a href="https://github.com/degenview/flatpak">how this repository is built</a></p>
-</main>
-</body>
-</html>
-EOF
+# The landing page is a real file (web/index.html); this fills in the versions and the key.
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SITE="$SITE" SITE_URL="$SITE_URL" APP_ID="$APP_ID" FINGERPRINT="$fingerprint" STATE="$IN/state.json" \
+  "$here/render-site.sh"
 
 size="$(du -sm "$SITE" | cut -f1)"
 echo "Site is ${size} MB."

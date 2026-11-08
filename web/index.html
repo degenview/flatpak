@@ -1,0 +1,444 @@
+<!doctype html>
+<!--
+  Landing page of https://flatpak.degenview.app. A plain static file: scripts/render-site.sh copies
+  web/ into the site and fills in the double-brace placeholders below. Colours, type and shapes follow
+  degenview.app (src/styles/global.css there); keep them in step by hand.
+-->
+<html lang="en" data-default="{{DEFAULT_CHANNEL}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DegenView for Linux: the Flatpak repository</title>
+<meta name="description" content="Install and update DegenView on Linux with Flatpak. A signed repository for x86_64 and aarch64 with stable and release candidate channels.">
+<meta name="author" content="Nico Oelgart">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="{{SITE_URL}}/">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="light dark">
+
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DegenView">
+<meta property="og:title" content="DegenView for Linux: the Flatpak repository">
+<meta property="og:description" content="Install and update DegenView on Linux with Flatpak. Signed, for x86_64 and aarch64.">
+<meta property="og:url" content="{{SITE_URL}}/">
+<meta property="og:image" content="{{SITE_URL}}/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin>
+
+<script>
+  // Same rule as degenview.app: the saved choice, else dark.
+  (function () {
+    var t = 'dark';
+    try { t = localStorage.getItem('theme') || 'dark'; } catch (e) {}
+    var d = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    var r = document.documentElement;
+    r.classList.toggle('dark', d);
+    r.classList.add('js');
+  })();
+</script>
+
+<style>
+  @font-face { font-family: "Inter Variable"; font-style: normal; font-display: swap; font-weight: 100 900;
+    src: url("/fonts/inter-latin.woff2") format("woff2-variations"); }
+  @font-face { font-family: "JetBrains Mono Variable"; font-style: normal; font-display: swap; font-weight: 100 800;
+    src: url("/fonts/jetbrains-mono-latin.woff2") format("woff2-variations"); }
+
+  :root {
+    color-scheme: light;
+    --bg: #ffffff; --surface: #f9f9f9; --chrome: #f2f2f2; --border: #dbdbdb;
+    --fg: #0f0f0f; --muted: #636363;
+    --accent: #2962ff; --accent-text: #2962ff;
+    --inverse: #0f0f0f; --inverse-ink: #ffffff; --inverse-hover: #2e2e2e;
+    --purple: #b600d6; --up: #089981;
+    --glow-a: rgb(41 98 255 / 0.16); --glow-b: rgb(213 0 249 / 0.1); --grid: rgb(0 0 0 / 0.05);
+    --shadow: 0 24px 60px -24px rgb(0 0 0 / 0.25);
+    --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  :root.dark {
+    color-scheme: dark;
+    --bg: #000000; --surface: #131313; --chrome: #222222; --border: #303030;
+    --fg: #ffffff; --muted: #b8b8b8;
+    --accent-text: #5b9cf6;
+    --inverse: #ffffff; --inverse-ink: #000000; --inverse-hover: #dbdbdb;
+    --purple: #d500f9; --up: #22ab94;
+    --glow-a: rgb(41 98 255 / 0.34); --glow-b: rgb(213 0 249 / 0.2); --grid: rgb(255 255 255 / 0.045);
+    --shadow: 0 24px 60px -24px rgb(0 0 0 / 0.8);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 var(--font-sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; border-radius: 8px; }
+  code, pre { font-family: var(--font-mono); }
+  .wrap { width: min(100% - 2rem, 72rem); margin-inline: auto; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .skip { position: fixed; left: 1rem; top: 1rem; z-index: 60; padding: .5rem 1rem; border-radius: .5rem;
+    background: var(--accent); color: #fff; transform: translateY(-200%); }
+  .skip:focus { transform: none; }
+
+  .display { margin: 0; font-weight: 600; letter-spacing: -0.035em; line-height: 1.04; text-wrap: balance; }
+  .gradient { background: linear-gradient(90deg, #2962ff 30%, var(--purple)); -webkit-background-clip: text;
+    background-clip: text; color: transparent; padding-bottom: .08em; }
+  .eyebrow { margin: 0; font-size: .875rem; font-weight: 600; color: var(--accent-text); }
+  .muted { color: var(--muted); }
+  .link { color: var(--accent-text); text-decoration: underline; text-underline-offset: 4px; font-weight: 500; }
+  .mono { font-family: var(--font-mono); }
+  .chip { display: inline-block; padding: .125rem .5rem; border-radius: .375rem; background: var(--chrome);
+    font: 600 .75rem/1.5 var(--font-mono); color: var(--fg); }
+
+  /* Header */
+  header.top { position: sticky; top: 0; z-index: 40; border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 4rem; }
+  .brand { display: flex; align-items: center; gap: .625rem; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; }
+  .brand img { width: 2rem; height: 2rem; }
+  .brand small { font-size: .8125rem; font-weight: 500; color: var(--muted); letter-spacing: 0; padding-left: .625rem; border-left: 1px solid var(--border); }
+  nav.main { display: flex; align-items: center; gap: .25rem; font-size: .875rem; font-weight: 500; }
+  nav.main a { padding: .5rem .875rem; border-radius: .5rem; color: color-mix(in srgb, var(--fg) 80%, transparent); text-decoration: none; transition: background-color .15s, color .15s; }
+  nav.main a:hover { background: var(--chrome); color: var(--fg); }
+  .icon-btn { display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 1px solid var(--border);
+    border-radius: .625rem; background: transparent; color: var(--fg); cursor: pointer; transition: background-color .15s, border-color .15s; }
+  .icon-btn:hover { background: var(--surface); border-color: var(--muted); }
+  .icon-btn svg { width: 1.125rem; height: 1.125rem; }
+  .sun { display: none; } .dark .sun { display: block; } .dark .moon { display: none; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .75rem 1.25rem;
+    border: 1px solid transparent; border-radius: .75rem; font: 600 .9375rem/1.4 var(--font-sans); text-decoration: none;
+    cursor: pointer; transition: transform .15s, background-color .15s, border-color .15s; }
+  .btn:active { transform: translateY(1px); }
+  .btn svg { width: 1.125rem; height: 1.125rem; }
+  .btn-primary { background: var(--inverse); color: var(--inverse-ink); }
+  .btn-primary:hover { background: var(--inverse-hover); }
+  .btn-ghost { background: transparent; color: var(--fg); border-color: var(--border); }
+  .btn-ghost:hover { border-color: var(--muted); background: var(--surface); }
+
+  /* Hero */
+  .hero { position: relative; overflow: hidden; padding: 5rem 0 4.5rem; text-align: center; isolation: isolate; }
+  .hero::before { content: ""; position: absolute; inset: 0; z-index: -1;
+    background:
+      radial-gradient(60% 55% at 28% 0%, var(--glow-a), transparent 70%),
+      radial-gradient(50% 50% at 78% 8%, var(--glow-b), transparent 70%),
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 56px 56px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 56px 56px;
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent); }
+  .pill { display: inline-flex; align-items: center; gap: .5rem; padding: .375rem .875rem; border: 1px solid var(--border);
+    border-radius: 999px; background: color-mix(in srgb, var(--surface) 80%, transparent); font-size: .8125rem; font-weight: 500; color: var(--muted); }
+  .pill i { width: .5rem; height: .5rem; border-radius: 50%; background: var(--up); box-shadow: 0 0 0 3px color-mix(in srgb, var(--up) 25%, transparent); }
+  .hero h1 { margin-top: 1.5rem; font-size: clamp(2.5rem, 7vw, 4.75rem); }
+  .hero .lede { max-width: 38rem; margin: 1.5rem auto 0; font-size: 1.1875rem; color: var(--muted); text-wrap: pretty; }
+
+  /* Terminal card */
+  .term { max-width: 44rem; margin: 2.75rem auto 0; text-align: left; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 1rem; box-shadow: var(--shadow), 0 0 0 1px rgb(41 98 255 / .12), 0 30px 90px -40px rgb(41 98 255 / .5); overflow: hidden; }
+  .term-bar { display: flex; align-items: center; gap: .75rem; padding: .625rem .75rem .625rem 1rem; background: var(--chrome); border-bottom: 1px solid var(--border); }
+  .dots { display: flex; gap: .375rem; }
+  .dots i { width: .6875rem; height: .6875rem; border-radius: 50%; background: color-mix(in srgb, var(--muted) 45%, transparent); }
+  .tabs { display: none; margin-left: auto; padding: .1875rem; border: 1px solid var(--border); border-radius: .625rem; background: var(--bg); }
+  .js .tabs { display: inline-flex; }
+  .tabs button { padding: .25rem .75rem; border: 0; border-radius: .4375rem; background: transparent; color: var(--muted);
+    font: 600 .8125rem/1.4 var(--font-sans); cursor: pointer; transition: background-color .15s, color .15s; }
+  .tabs button:hover { color: var(--fg); }
+  .tabs button[aria-selected="true"] { background: var(--inverse); color: var(--inverse-ink); }
+  .cmds { position: relative; margin: 0; padding: 1.25rem 3.5rem 1.25rem 1.25rem; overflow-x: auto; font-size: .875rem; line-height: 1.85; }
+  .cmds code { display: block; white-space: pre; }
+  .cmds code::before { content: "$ "; color: var(--muted); user-select: none; }
+  .cmds code.note::before { content: ""; }
+  .cmds code.note { color: var(--muted); }
+  .copy { position: absolute; right: .625rem; top: .625rem; display: inline-grid; place-items: center; width: 2rem; height: 2rem;
+    border: 1px solid var(--border); border-radius: .5rem; background: var(--bg); color: var(--muted); cursor: pointer; transition: color .15s, border-color .15s; }
+  .copy:hover { color: var(--fg); border-color: var(--muted); }
+  .copy svg { width: 1rem; height: 1rem; }
+  .copy .ok { display: none; color: var(--up); } .copy.done .ok { display: block; } .copy.done .cp { display: none; }
+  .copy { display: none; } .js .copy { display: inline-grid; }
+  .term-foot { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .75rem 1rem; border-top: 1px solid var(--border);
+    font-size: .8125rem; color: var(--muted); }
+  .term-foot .sep { opacity: .5; }
+
+  .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin-top: 2rem; }
+  .hero .fine { margin: 1.25rem 0 0; font-size: .875rem; color: var(--muted); }
+
+  /* Sections */
+  section.block { padding: 5rem 0; }
+  section.block + section.block { border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent); }
+  .head { max-width: 40rem; margin: 0 auto 3rem; text-align: center; }
+  .head h2 { margin-top: .75rem; font-size: clamp(2rem, 5vw, 3.25rem); }
+  .head p.sub { margin: 1rem 0 0; font-size: 1.0625rem; color: var(--muted); text-wrap: pretty; }
+  .grid { display: grid; gap: 1rem; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: .875rem; padding: 1.5rem; }
+  .card h3 { margin: 0; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; }
+  .card p { margin: .625rem 0 0; font-size: .9375rem; color: var(--muted); text-wrap: pretty; }
+  .card code:not(.cmd) { padding: .1em .4em; border-radius: .3125rem; background: var(--chrome); color: var(--fg); font-size: .85em; }
+  .step-n { display: inline-grid; place-items: center; width: 1.875rem; height: 1.875rem; margin-bottom: 1rem; border-radius: 50%;
+    background: var(--chrome); border: 1px solid var(--border); font: 600 .8125rem/1 var(--font-mono); }
+  .card code.mini { display: block; background: var(--bg); color: var(--fg); font-size: .8125rem; padding: .625rem .875rem; border-radius: .625rem; margin-top: 1rem; border: 1px solid var(--border);
+    line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  .chan { display: flex; flex-direction: column; }
+  .chan-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .chan .ver { margin-top: 1.25rem; font: 600 1.75rem/1.2 var(--font-mono); letter-spacing: -0.02em; }
+  .chan .ver.none { font-family: var(--font-sans); font-size: 1.25rem; color: var(--muted); }
+  .chan ul { margin: 1rem 0 0; padding: 0; list-style: none; font-size: .9375rem; color: var(--muted); }
+  .chan li { position: relative; padding-left: 1.25rem; margin-top: .5rem; }
+  .chan li::before { content: ""; position: absolute; left: 0; top: .6em; width: .5rem; height: 2px; background: var(--muted); border-radius: 1px; }
+  .chan .btn { margin-top: auto; align-self: flex-start; }
+  .chan .spacer { flex: 1; min-height: 1.25rem; }
+
+  .fpr { margin: 1rem 0 0; padding: 1rem 1.125rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--bg);
+    font: 500 .9375rem/1.7 var(--font-mono); letter-spacing: .02em; word-break: break-word; }
+  .perm { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 0; padding: 0; list-style: none; }
+  .perm li { padding: .3125rem .75rem; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); font: 500 .8125rem/1.5 var(--font-mono); }
+  .perm li.no { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
+
+  /* Footer */
+  footer.bottom { border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent); padding: 3.5rem 0; font-size: .875rem; color: var(--muted); }
+  footer.bottom .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2rem; }
+  footer.bottom p { margin: .5rem 0 0; max-width: 28rem; }
+  footer.bottom strong { color: var(--fg); font-weight: 600; }
+  footer.bottom nav { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-content: flex-start; }
+  footer.bottom nav a { text-decoration: none; } footer.bottom nav a:hover { color: var(--fg); }
+
+  @media (max-width: 52rem) {
+    .g3 { grid-template-columns: 1fr; }
+    .g2 { grid-template-columns: 1fr; }
+    nav.main a.opt { display: none; }
+    .brand small { display: none; }
+    .hero { padding-top: 3.5rem; }
+    section.block { padding: 3.5rem 0; }
+  }
+  @media (max-width: 30rem) {
+    nav.main a { padding: .5rem .5rem; }
+    .term-bar { flex-wrap: wrap; }
+    .tabs { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="https://degenview.app" aria-label="DegenView home">
+      <img src="/icon-192.png" alt="" width="32" height="32">
+      <span>DegenView</span>
+      <small>Flatpak</small>
+    </a>
+    <nav class="main" aria-label="Primary">
+      <a class="opt" href="#channels">Channels</a>
+      <a class="opt" href="#trust">Security</a>
+      <a href="https://degenview.app/download/">Downloads</a>
+      <a class="opt" href="https://docs.degenview.app/">Docs</a>
+      <a href="https://github.com/degenview/degenview" target="_blank" rel="noopener noreferrer">GitHub<span class="sr-only"> (opens in a new tab)</span></a>
+      <button class="icon-btn" type="button" id="theme" aria-label="Toggle colour theme">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap">
+      <p class="pill"><i></i>Signed repository · x86_64 and aarch64</p>
+      <h1 class="display">DegenView on Linux,<br><span class="gradient">one Flatpak away.</span></h1>
+      <p class="lede">Add the repository once, then install and update DegenView like any other Flatpak app. A free, open source market dashboard with local Pine Script v6.</p>
+
+      <div class="term" id="install">
+        <div class="term-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <div class="tabs" role="tablist" aria-label="Release channel">
+            <button type="button" role="tab" data-channel="stable" aria-selected="true" aria-controls="cmd-stable">Stable</button>
+            <button type="button" role="tab" data-channel="beta" aria-selected="false" aria-controls="cmd-beta">Beta</button>
+          </div>
+        </div>
+        <pre class="cmds" id="cmd-stable"><code class="note"># Stable: {{STABLE_NOTE}}</code><code>flatpak remote-add --if-not-exists degenview {{SITE_URL}}/degenview.flatpakrepo</code><code>flatpak install degenview {{APP_ID}}//stable</code><code>flatpak run {{APP_ID}}</code><button class="copy" type="button" aria-label="Copy commands"><svg class="cp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></pre>
+        <pre class="cmds" id="cmd-beta"><code class="note"># Beta: {{BETA_NOTE}}</code><code>flatpak remote-add --if-not-exists degenview {{SITE_URL}}/degenview.flatpakrepo</code><code>flatpak install degenview {{APP_ID}}//beta</code><code>flatpak run {{APP_ID}}//beta</code><button class="copy" type="button" aria-label="Copy commands"><svg class="cp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></pre>
+        <div class="term-foot">
+          <span>Runtime comes from Flathub.</span>
+          <a class="link" href="https://flathub.org/setup" target="_blank" rel="noopener noreferrer">Set Flathub up first<span class="sr-only"> (opens in a new tab)</span></a>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="btn btn-primary" id="ref-btn" href="/{{DEFAULT_REF_FILE}}" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 20h16"/></svg>
+          Download .flatpakref
+        </a>
+        <a class="btn btn-ghost" href="#how">How it works</a>
+      </div>
+      <p class="fine">Prefer a click? Open the <code>.flatpakref</code> with GNOME Software, KDE Discover or <code>flatpak install</code>.</p>
+    </div>
+  </section>
+
+  <section class="block" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">how it works</p>
+        <h2 class="display" id="how-h">Three commands. <span class="gradient">Then it just updates.</span></h2>
+      </div>
+      <div class="grid g3">
+        <div class="card">
+          <span class="step-n">1</span>
+          <h3>Add the repository</h3>
+          <p>A one-time step. Flatpak downloads the repository's public key from the <code>.flatpakrepo</code> file and checks every update against it.</p>
+          <code class="mini">flatpak remote-add --if-not-exists \
+  degenview {{SITE_URL}}/degenview.flatpakrepo</code>
+        </div>
+        <div class="card">
+          <span class="step-n">2</span>
+          <h3>Install DegenView</h3>
+          <p>Pick the stable or beta branch, here the {{DEFAULT_CHANNEL}} one. Flathub supplies the Freedesktop runtime the first time you install a Flatpak app.</p>
+          <code class="mini">flatpak install degenview {{APP_ID}}//{{DEFAULT_CHANNEL}}</code>
+        </div>
+        <div class="card">
+          <span class="step-n">3</span>
+          <h3>Keep it current</h3>
+          <p>New releases appear here within hours. Update with your software centre or the terminal; the app does not install updates itself.</p>
+          <code class="mini">flatpak update</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="channels" aria-labelledby="channels-h">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">channels</p>
+        <h2 class="display" id="channels-h">Stable, or <span class="gradient">try it early.</span></h2>
+        <p class="sub">An installed app follows its own branch and never switches. Remove it and install the other branch to move between them.</p>
+      </div>
+      <div class="grid g2">
+        <article class="card chan">
+          <div class="chan-top"><h3>Stable</h3><span class="chip">stable</span></div>
+          <p class="ver {{STABLE_CLASS}}">{{STABLE}}</p>
+          <ul>
+            <li>The newest final release.</li>
+            <li>Right for most people.</li>
+          </ul>
+          <div class="spacer"></div>
+          <a class="btn btn-ghost" href="/{{APP_ID}}.flatpakref" download{{STABLE_BTN_HIDDEN}}>.flatpakref for stable</a>
+        </article>
+        <article class="card chan">
+          <div class="chan-top"><h3>Beta</h3><span class="chip">beta</span></div>
+          <p class="ver {{BETA_CLASS}}">{{BETA}}</p>
+          <ul>
+            <li>Release candidates, ahead of the final.</li>
+            <li>When a final is the newest release, beta carries it too, so you move on to the next candidate from there.</li>
+          </ul>
+          <div class="spacer"></div>
+          <a class="btn btn-ghost" href="/{{APP_ID}}.beta.flatpakref" download>.flatpakref for beta</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="trust" aria-labelledby="trust-h">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">security</p>
+        <h2 class="display" id="trust-h">Signed, verified, <span class="gradient">sandboxed.</span></h2>
+      </div>
+      <div class="grid g2">
+        <div class="card">
+          <h3>Every build is checked, then signed</h3>
+          <p>A bundle is published only if its GitHub release is immutable and its build attestation names the app's release workflow. This repository signs the OSTree commits, and Flatpak refuses an update that does not match the key you added.</p>
+          <p style="margin-top:1rem">Signing key fingerprint:</p>
+          <p class="fpr" style="margin-top:.5rem">{{FINGERPRINT_SPACED}}</p>
+        </div>
+        <div class="card">
+          <h3>A small sandbox</h3>
+          <p>DegenView gets the network for market data and a display. It has no access to your files; the file chooser portal hands over only what you pick. Secrets live in the desktop keyring through the Secret portal.</p>
+          <ul class="perm" aria-label="Sandbox permissions">
+            <li>--share=network</li>
+            <li>--share=ipc</li>
+            <li>--socket=wayland</li>
+            <li>--socket=fallback-x11</li>
+            <li>--device=dri</li>
+            <li class="no">--filesystem</li>
+          </ul>
+        </div>
+      </div>
+      <p class="muted" style="text-align:center;margin:2.5rem 0 0;font-size:.9375rem">
+        To remove it: <code class="mono">flatpak uninstall {{APP_ID}}</code> and
+        <code class="mono">flatpak remote-delete degenview</code>.
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer class="bottom">
+  <div class="wrap">
+    <div>
+      <strong>DegenView</strong>
+      <p>Free, open source market dashboard. © 2026 Nico Oelgart, GPL-3.0-only. Not financial advice.</p>
+    </div>
+    <nav aria-label="Footer">
+      <a href="https://degenview.app">degenview.app</a>
+      <a href="https://degenview.app/download/">Downloads</a>
+      <a href="https://docs.degenview.app/">Docs</a>
+      <a href="https://github.com/degenview/degenview" target="_blank" rel="noopener noreferrer">Source<span class="sr-only"> (opens in a new tab)</span></a>
+      <a href="https://github.com/degenview/flatpak" target="_blank" rel="noopener noreferrer">How this repository is built<span class="sr-only"> (opens in a new tab)</span></a>
+      <a href="/state.json">state.json</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+
+  // Theme
+  document.getElementById('theme').addEventListener('click', function () {
+    var dark = !root.classList.contains('dark');
+    root.classList.toggle('dark', dark);
+    try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+  });
+
+  // Channel tabs: the command block and the .flatpakref button follow the choice.
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
+  var refs = { stable: '/{{APP_ID}}.flatpakref', beta: '/{{APP_ID}}.beta.flatpakref' };
+  function select(channel) {
+    tabs.forEach(function (b) {
+      var on = b.dataset.channel === channel;
+      b.setAttribute('aria-selected', String(on));
+      document.getElementById('cmd-' + b.dataset.channel).hidden = !on;
+    });
+    document.getElementById('ref-btn').setAttribute('href', refs[channel]);
+  }
+  tabs.forEach(function (b) { b.addEventListener('click', function () { select(b.dataset.channel); }); });
+  select(root.dataset['default'] === 'beta' ? 'beta' : 'stable');
+
+  // Copy: the commands without their prompts or the comment line.
+  Array.prototype.forEach.call(document.querySelectorAll('.copy'), function (btn) {
+    btn.addEventListener('click', function () {
+      var lines = Array.prototype.map.call(btn.parentNode.querySelectorAll('code:not(.note)'), function (c) { return c.textContent; });
+      var text = lines.join('\n');
+      var done = function () { btn.classList.add('done'); setTimeout(function () { btn.classList.remove('done'); }, 1600); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () {});
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

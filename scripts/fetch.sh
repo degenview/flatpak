@@ -5,8 +5,6 @@
 #   SOURCE_REPO   owner/name of the app repository (degenview/degenview)
 #   SITE_URL      where this repo is served (https://flatpak.degenview.app)
 #   GH_TOKEN      the workflow's own token; the releases are public
-#   KEEP          releases kept per channel (default 1: a bundle holds a single commit with no
-#                 history, so an older release cannot be offered as an earlier version of the ref)
 #   FORCE         "true" publishes even when the live site already lists the same releases
 #   OUT           output directory (default out)
 #
@@ -15,7 +13,6 @@
 set -euo pipefail
 
 : "${SOURCE_REPO:?}" "${SITE_URL:?}" "${GITHUB_OUTPUT:?}"
-KEEP="${KEEP:-1}"
 FORCE="${FORCE:-false}"
 OUT="${OUT:-out}"
 
@@ -26,11 +23,20 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 mkdir -p "$OUT/bundles"
 
-# Releases the app's own release workflow made, newest first. Anything else (a draft, a release
-# somebody made by hand, an odd tag name) is not published.
+# Releases the app's own release workflow made. Anything else (a draft, a release somebody made by
+# hand, an odd tag name) is not published.
 gh api "repos/${SOURCE_REPO}/releases?per_page=50" > "$OUT/releases.json"
 
-jq --arg since "$SINCE_PUBLISHED_AT" --argjson keep "$KEEP" '
+jq --arg since "$SINCE_PUBLISHED_AT" '
+  # Order by version, never by upload time: a patch release for an old line must not outrank a
+  # candidate of a newer line. A final is newer than its own candidates; alpha < beta < rc.
+  def version_key:
+    capture("^v(?<a>[0-9]+)\\.(?<b>[0-9]+)\\.(?<c>[0-9]+)(-(?<pre>alpha|beta|rc)\\.(?<n>[0-9]+))?$")
+    | [(.a | tonumber), (.b | tonumber), (.c | tonumber),
+       (if .pre then 0 else 1 end),
+       ({"alpha": 0, "beta": 1, "rc": 2}[.pre // "alpha"]),
+       ((.n // "0") | tonumber)];
+
   [ .[]
     | select(.draft | not)
     | select(.author.login == "github-actions[bot]")
@@ -41,13 +47,27 @@ jq --arg since "$SINCE_PUBLISHED_AT" --argjson keep "$KEEP" '
         . as $r
         | ($r.assets | index("DegenView-" + $r.tag + "-linux-x64.flatpak")) != null
           and ($r.assets | index("DegenView-" + $r.tag + "-linux-arm64.flatpak")) != null)
-    | {tag, channel: (if .prerelease then "beta" else "stable" end)}
-  ]
-  | (map(select(.channel == "stable")) | .[:$keep])
-    + (map(select(.channel == "beta")) | .[:$keep])
+    | {tag, prerelease}
+  ] as $all
+  | ($all | sort_by(.tag | version_key) | reverse) as $newest_first
+  # `stable` is the newest final. `beta` is the newest release of any kind: a Flatpak follows its own
+  # branch and never switches, and the Release Candidate channel of the app accepts finals, so a
+  # final has to reach `beta` too.
+  | ($newest_first | map(select(.prerelease | not)) | first) as $stable
+  | ($newest_first | first) as $beta
+  | if $beta == null then []
+    else
+      (if $stable == null then []
+       else [{tag: $stable.tag,
+              branches: (["stable"] + (if $stable.tag == $beta.tag then ["beta"] else [] end))}]
+       end)
+      + (if $stable != null and $stable.tag == $beta.tag then []
+         else [{tag: $beta.tag, branches: ["beta"]}]
+         end)
+    end
 ' "$OUT/releases.json" > "$OUT/selected.json"
 
-jq -c '[.[].tag] | sort' "$OUT/selected.json" > "$OUT/state.json"
+jq -c 'sort_by(.tag)' "$OUT/selected.json" > "$OUT/state.json"
 
 if [ "$(jq 'length' "$OUT/selected.json")" -eq 0 ]; then
   echo "No release to publish yet (none published since ${SINCE_PUBLISHED_AT} with both bundles)."

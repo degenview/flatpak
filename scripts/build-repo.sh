@@ -43,6 +43,25 @@ for bundle in "${bundles[@]}"; do
     --gpg-sign="$KEYID" --gpg-homedir="$GNUPGHOME" "$SITE/repo" "$bundle"
 done
 
+# A final release is built once, on `stable`. An installed app follows its own branch and never
+# switches, and the Release Candidate channel accepts finals, so when the newest release of all is a
+# final it has to be on `beta` too. `build-commit-from` makes a new commit for the other branch from
+# the same files (it rewrites the ref binding that Flatpak checks on install) and signs it.
+while read -r tag; do
+  for arch in x86_64 aarch64; do
+    stable_ref="app/${APP_ID}/${arch}/stable"
+    # Read into a variable first: `grep -q` can end a pipe early, which pipefail turns into a failure.
+    refs="$(ostree refs --repo="$SITE/repo")"
+    if ! grep -qx "$stable_ref" <<< "$refs"; then
+      echo "::error::${tag} should also be on beta, but ${stable_ref} was not imported."
+      exit 1
+    fi
+    flatpak build-commit-from --no-update-summary \
+      --gpg-sign="$KEYID" --gpg-homedir="$GNUPGHOME" \
+      --src-ref="$stable_ref" "$SITE/repo" "app/${APP_ID}/${arch}/beta"
+  done
+done < <(jq -r '.[] | select((.branches | index("beta")) and (.branches | index("stable"))) | .tag' "$IN/selected.json")
+
 # Only the two channel branches are served. A bundle still on `master` (built before channels) is
 # dropped here even if it got past the date in config.env.
 kept=0

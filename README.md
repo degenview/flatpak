@@ -22,16 +22,22 @@ releases; nothing in `degenview/degenview` holds a token for this repo.
 
 | Job | Secrets | What it does |
 | --- | --- | --- |
-| `fetch` | none | `scripts/fetch.sh` picks the newest `stable` and `beta` release made by the app's release workflow after `SINCE_PUBLISHED_AT` (`config.env`), downloads both CPUs' bundles and verifies them (`gh release verify`, `verify-asset`, `gh attestation verify`). Stops when the live `state.json` already lists the same releases. |
+| `fetch` | none | `scripts/fetch.sh` picks the releases for `stable` and `beta` (below) from those made by the app's release workflow after `SINCE_PUBLISHED_AT` (`config.env`), downloads both CPUs' bundles and verifies them (`gh release verify`, `verify-asset`, `gh attestation verify`). Stops when the live `state.json` already lists the same releases. |
 | `sign` | `FLATPAK_GPG_KEY` (environment `publish`, `main` only) | `scripts/build-repo.sh` imports the bundles into an OSTree repo, signs it, and writes the `.flatpakrepo`, the `.flatpakref` files, the landing page and `state.json`. `scripts/smoke-test.sh` then installs the app from that repo over `file://`. |
 | `deploy` | none | Publishes the result with GitHub Pages. |
 
 The repo is rebuilt from scratch on every change. A bundle holds one commit and no history, so only
-the newest release of each channel is served; older ones stay on the releases page.
+one release per branch is served; older ones stay on the releases page.
 
-Releases are assigned to a Flatpak branch by `degenview/degenview`'s `release.yml`: `stable` for a
-final release, `beta` for a tag with a hyphen (a release candidate). Bundles from before that (branch
-`master`) are skipped.
+`degenview/degenview`'s `release.yml` builds a final release on `stable` and a tag with a hyphen (a
+release candidate) on `beta`. Bundles from before that (branch `master`) are skipped. Releases are
+compared by version, not upload time:
+
+- `stable` is the newest final release.
+- `beta` is the newest release of any kind. A Flatpak follows its own branch and never switches, and
+  the app's Release Candidate channel accepts finals, so when a final is the newest release it is
+  copied onto `beta` as well (`flatpak build-commit-from`, signed). Someone on `beta` then moves from
+  release candidates to the final and on to the next candidate.
 
 ## One-time setup (maintainer)
 
